@@ -1,6 +1,3 @@
-import requests
-import json
-
 from openai import OpenAI
 
 def main():
