@@ -1,39 +1,42 @@
 import requests
 import json
 
-
+from openai import OpenAI
 
 def main():
     api_url1 = "http://210.61.209.139:45014/v1/chat/completions"
     api_url2 = "http://210.61.209.139:45005/v1/chat/completions"
 
-    # 依據您的慣用環境，假設使用者希望 AI 程式設計師的故事
-    payload = {
-        "model": "gpt-oss-120b", # 這裡的模型名稱通常是啟動服務時所載入的名稱
-        "messages": [
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": "Tell me a short story about a computer programmer who uses fish shell and vim."},
-        ],
-        "temperature": 0.7,
-        "max_tokens": 512,
-        "stream": True # 設定為 True 可啟用串流（Streaming）
-    }
+    client = OpenAI(
+        base_url=api_url1,
+        api_key="your_api_key_here",
+    )
+
+    msg = "Hello, how are you?"
 
     try:
-        response = requests.post(api_url1, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
-        response.raise_for_status() # 檢查是否有 HTTP 錯誤
+        response = client.chat.completions.create(
+            model="gpt-oss-120b",
+            messages=[{"role": "user", "content": msg}],
+            max_tokens=100,
+            temperature=0.7,
+        )
 
-        # 處理回應
-        data = response.json()
-        if data and 'choices' in data and data['choices']:
-            print("Generated Text:")
-            print(data['choices'][0]['message']['content'])
+        choice = response.choices[0]
+
+        # 支援不同 SDK 回傳格式的擷取方法
+        if hasattr(choice, "message") and getattr(choice.message, "content", None):
+            generated_text = choice.message.content
+        elif isinstance(choice, dict):
+            generated_text = choice.get("message", {}).get("content") or choice.get("text")
         else:
-            print("Error: Invalid response format.")
+            generated_text = getattr(choice, "text", None)
 
-    except requests.exceptions.RequestException as e:
-        print(f"An error occurred: {e}")
+        print("Prompt:", msg)
+        print("Generated Text:", generated_text)
 
+    except Exception as e:
+        print("An error occurred:", str(e))
 
 if __name__ == "__main__":
     main()
